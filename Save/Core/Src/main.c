@@ -75,7 +75,7 @@ uint8_t StateSW[2] = {0};
 uint8_t STATE_Display = 0;
 uint8_t Frequency = 2;
 uint8_t Delay = 100;
-uint8_t LEDStatus = 0;
+uint8_t LEDStatus = 1;
 
 /* USER CODE END 0 */
 
@@ -111,7 +111,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   {
 
-  char temp[]="HELLO WORLD\r\n please type something to test UART\r\n******************************************\r\n";
+  char temp[]="HELLO WORLD\r\n please type something to test UART\r\n\r\n";
   HAL_UART_Transmit(&huart2, (uint8_t*)temp, strlen(temp),10);
 
   }
@@ -128,7 +128,7 @@ int main(void)
 		int16_t inputchar = UARTRecieveIT();																// Show ReceivedChar:
 		if(inputchar != -1)
 		{
-			sprintf(TxDataBuffer, "ReceivedChar:[%c]\r\n", inputchar);
+			sprintf(TxDataBuffer, "ReceivedChar:[%c]\r\n\r\n", inputchar);
 			HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 		}
 
@@ -141,7 +141,7 @@ int main(void)
 
 // MAINMENU
 		case StateDisplay_MainMenu_Print:
-			sprintf(TxDataBuffer, "0: LED Control\r\n1: Button Status\r\n******************************************\r\n");
+			sprintf(TxDataBuffer, "0: LED Control\r\n1: Button Status\r\n\r\n");
 			HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 			STATE_Display = StateDisplay_MainMenu_WaitInput;
 			break;
@@ -158,7 +158,7 @@ int main(void)
 				STATE_Display = StateDisplay_Menu1_Print;
 				break;
 			default:
-				sprintf(TxDataBuffer, "Unidentified Input Please Try Again\r\n");
+				sprintf(TxDataBuffer, "Unidentified Input\r\n");
 				HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 				STATE_Display = StateDisplay_MainMenu_Print;
 				break;
@@ -167,7 +167,7 @@ int main(void)
 
 // MENU-0
 		case StateDisplay_Menu0_Print:
-			sprintf(TxDataBuffer, "a: Speed up LED +1 Hz\r\ns:Speed down LED -1 Hz\r\nd:On/Off\r\nx: Back to main menu\r\n******************************************\r\n");
+			sprintf(TxDataBuffer, "a: +1 Hz\r\ns:-1 Hz\r\nd:On/Off\r\nx: Back\r\n");
 			HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 			STATE_Display = StateDisplay_Menu0_WaitInput;
 			break;
@@ -215,7 +215,7 @@ int main(void)
 				STATE_Display = StateDisplay_MainMenu_Print;
 				break;
 			default:
-				sprintf(TxDataBuffer, "Unidentified Input Please Try Again\r\n");
+				sprintf(TxDataBuffer, "Unidentified Input\r\n");
 				HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 				STATE_Display = StateDisplay_Menu0_Print;
 				break;
@@ -224,7 +224,7 @@ int main(void)
 
 // MENU-1
 		case StateDisplay_Menu1_Print:
-			sprintf(TxDataBuffer, "x: Back to main menu\r\n******************************************\r\n");
+			sprintf(TxDataBuffer, "x: Back\r\n");
 			HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 			STATE_Display = StateDisplay_Menu1_WaitInput;
 			break;
@@ -237,7 +237,7 @@ int main(void)
 				STATE_Display = StateDisplay_MainMenu_Print;
 				break;
 			default:
-				sprintf(TxDataBuffer, "Unidentified Input Please Try Again\r\n");
+				sprintf(TxDataBuffer, "Unidentified Input\r\n");
 				HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 				STATE_Display = StateDisplay_Menu1_Print;
 				break;
@@ -258,12 +258,12 @@ int main(void)
 		}
 
 // LED On/Off Status
-		if (LEDStatus == 0)
+		if (LEDStatus == 1)
 		{
 			HAL_Delay(Delay);
 			HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 		}
-		else if(LEDStatus == 1)
+		else if(LEDStatus == 0)
 		{
 			HAL_Delay(Delay);
 			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, RESET);
@@ -271,8 +271,7 @@ int main(void)
 
 
 		/*This section just simmulate Work Load*/
-		HAL_Delay(100);
-		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -405,7 +404,7 @@ void UARTRecieveAndResponsePolling()
 
 int16_t UARTRecieveIT()
 {
-	static uint32_t dataPos =0;
+	static uint32_t dataPos = 0;
 	int16_t data = -1;
 	if(huart2.RxXferSize - huart2.RxXferCount != dataPos)
 	{
