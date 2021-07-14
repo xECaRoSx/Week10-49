@@ -71,6 +71,12 @@ enum _StateDisplay
   StateDisplay_Menu1_WaitInput
 };
 
+uint8_t StateSW[2] = {0};
+uint8_t STATE_Display = 0;
+uint8_t Frequency = 2;
+uint8_t Delay = 100;
+uint8_t LEDStatus = 0;
+
 /* USER CODE END 0 */
 
 /**
@@ -105,7 +111,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   {
 
-  char temp[]="HELLO WORLD\r\n please type something to test UART\r\n";
+  char temp[]="HELLO WORLD\r\n please type something to test UART\r\n******************************************\r\n";
   HAL_UART_Transmit(&huart2, (uint8_t*)temp, strlen(temp),10);
 
   }
@@ -126,6 +132,7 @@ int main(void)
 			HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 		}
 
+// STATE START
 		switch (STATE_Display)
 		{
 		case StateDisplay_Start:
@@ -134,15 +141,15 @@ int main(void)
 
 // MAINMENU
 		case StateDisplay_MainMenu_Print:
-			sprintf(TxDataBuffer, "0: LED Control\r\n1: Button Status\r\n");
+			sprintf(TxDataBuffer, "0: LED Control\r\n1: Button Status\r\n******************************************\r\n");
 			HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 			STATE_Display = StateDisplay_MainMenu_WaitInput;
 			break;
 
 		case StateDisplay_MainMenu_WaitInput:
-			switch (InputChar)
+			switch (inputchar)
 			{
-			case 0:
+			case -1:
 				break;
 			case '0':
 				STATE_Display = StateDisplay_Menu0_Print;
@@ -153,25 +160,25 @@ int main(void)
 			default:
 				sprintf(TxDataBuffer, "Unidentified Input Please Try Again\r\n");
 				HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
-				STATE_Display = StateDisplay_Menu_Print;
+				STATE_Display = StateDisplay_MainMenu_Print;
 				break;
 			}
 			break;
 
 // MENU-0
 		case StateDisplay_Menu0_Print:
-			sprintf(TxDataBuffer, "a: Speed up LED +1 Hz\r\ns:Speed down LED -1 Hz\r\nd:On/Off\r\nx: Back to main menu\r\n");
+			sprintf(TxDataBuffer, "a: Speed up LED +1 Hz\r\ns:Speed down LED -1 Hz\r\nd:On/Off\r\nx: Back to main menu\r\n******************************************\r\n");
 			HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 			STATE_Display = StateDisplay_Menu0_WaitInput;
 			break;
 		case StateDisplay_Menu0_WaitInput:
-			switch (InputChar)
+			switch (inputchar)
 			{
-			case 0:
+			case -1:
 				break;
 			case 'a':
 				Frequency += 1;
-				//
+				Delay = 1000/(2*Frequency);
 				sprintf(TxDataBuffer, "LED Frequency = %d Hz\r\n", Frequency);
 				HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 				STATE_Display = StateDisplay_Menu0_Print;
@@ -180,7 +187,7 @@ int main(void)
 				if (Frequency > 0)
 				{
 					Frequency -= 1;
-					//
+					Delay = 1000/(2*Frequency);
 					sprintf(TxDataBuffer, "LED Frequency = %d Hz\r\n", Frequency);
 					HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 				}
@@ -194,14 +201,16 @@ int main(void)
 				STATE_Display = StateDisplay_Menu0_Print;
 				break;
 			case 'd':
-				if (Mode == 0)
+				if (LEDStatus == 0)
 				{
-					//
+					LEDStatus = 1;
 				}
-				else if (Mode == 1)
+				else if (LEDStatus == 1)
 				{
-					//
+					LEDStatus = 0;
 				}
+				STATE_Display = StateDisplay_Menu0_Print;
+				break;
 			case 'x':
 				STATE_Display = StateDisplay_MainMenu_Print;
 				break;
@@ -215,14 +224,14 @@ int main(void)
 
 // MENU-1
 		case StateDisplay_Menu1_Print:
-			sprintf(TxDataBuffer, "x: Back to main menu\r\n");
+			sprintf(TxDataBuffer, "x: Back to main menu\r\n******************************************\r\n");
 			HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 			STATE_Display = StateDisplay_Menu1_WaitInput;
 			break;
 		case StateDisplay_Menu1_WaitInput:
-			switch (InputChar)
+			switch (inputchar)
 			{
-			case 0:
+			case -1:
 				break;
 			case 'x':
 				STATE_Display = StateDisplay_MainMenu_Print;
@@ -233,8 +242,31 @@ int main(void)
 				STATE_Display = StateDisplay_Menu1_Print;
 				break;
 			}
-			//
+			StateSW[0] = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
+			if (StateSW[1] == 1 && StateSW[0] == 0)
+			{
+				sprintf(TxDataBuffer, "Pressed\r\n");
+				HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
+			}
+			else if (StateSW[1] == 0 && StateSW[0] == 1)
+			{
+				sprintf(TxDataBuffer, "Unpressed\r\n");
+				HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
+			}
+			StateSW[1] = StateSW[0];
 			break;
+		}
+
+// LED On/Off Status
+		if (LEDStatus == 0)
+		{
+			HAL_Delay(Delay);
+			HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+		}
+		else if(LEDStatus == 1)
+		{
+			HAL_Delay(Delay);
+			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, RESET);
 		}
 
 
